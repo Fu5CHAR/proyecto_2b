@@ -1,0 +1,46 @@
+import os
+import rasterio
+from rasterio.merge import merge
+import numpy as np
+from affine import Affine  
+
+def cargar_archivos_hgt(carpeta):
+    archivos = []
+    for nombre in os.listdir(carpeta):
+        if nombre.lower().endswith(".hgt"):
+            ruta = os.path.join(carpeta, nombre)
+            archivos.append(rasterio.open(ruta))
+    return archivos
+
+def unir_datos_hgt(archivos):
+    mosaic, transform = merge(archivos)
+    return mosaic[0], transform  
+
+
+
+def guardar_npy(data, transform, out_dir="procesado"):
+    os.makedirs(out_dir, exist_ok=True)
+    np.save(os.path.join(out_dir, "elevacion.npy"), data)
+    with open(os.path.join(out_dir, "transform.txt"), "w") as f:
+        f.write(repr(transform))  # <--- usa repr, NO str
+
+
+import os
+
+def main():
+    carpeta = "Datos/"
+    archivos = cargar_archivos_hgt(carpeta)
+
+    if not archivos:
+        print("No se encontraron archivos .hgt en la carpeta.")
+        return
+
+    print(f"Cargando {len(archivos)} archivos...")
+    data, transform = unir_datos_hgt(archivos)
+    print(f"Datos unidos. Dimensiones: {data.shape}")
+
+    guardar_npy(data, transform)
+    print("Datos guardados en carpeta 'procesado/' como 'elevacion.npy' y 'transform.txt'.")
+    
+if __name__ == "__main__":
+    main()
